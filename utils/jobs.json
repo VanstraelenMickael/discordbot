@@ -1,0 +1,78 @@
+[
+  {
+    "name": "Chasseur",
+    "icon": "https://i.ibb.co/c1XWJ26/chasseur.png"
+  },
+  {
+    "name": "Mineur",
+    "icon": "https://i.ibb.co/4dMGsZ2/mineur.png"
+  },
+  {
+    "name": "Bûcheron",
+    "icon": "https://i.ibb.co/9Y6PR8m/bucheron.png"
+  },
+  {
+    "name": "Pêcheur",
+    "icon": "https://i.ibb.co/3fWkx3Q/pecheur.png"
+  },
+  {
+    "name": "Paysan",
+    "icon": "https://i.ibb.co/c6txV3Q/paysan.png"
+  },
+  {
+    "name": "Alchimiste",
+    "icon": "https://i.ibb.co/F59vN1F/alchimiste.png"
+  },
+  {
+    "name": "Tailleur",
+    "icon": "https://i.ibb.co/R493XBh/tailleur.png"
+  },
+  {
+    "name": "Cordonnier",
+    "icon": "https://i.ibb.co/T2whQmG/cordo.png"
+  },
+  {
+    "name": "Bijoutier",
+    "icon": "https://i.ibb.co/rs5sRR9/bijoutier.png"
+  },
+  {
+    "name": "Bricoleur",
+    "icon": "https://i.ibb.co/sb7MJ5m/bricoleur.png"
+  },
+  {
+    "name": "Façonneur",
+    "icon": "https://i.ibb.co/BjHz2d9/fa-o.png"
+  },
+  {
+    "name": "Forgeron",
+    "icon": "https://i.ibb.co/pzXznmv/forgeron.png"
+  },
+  {
+    "name": "Sculpteur",
+    "icon": "https://i.ibb.co/f1hbpDz/sculpteur.png"
+  },
+  {
+    "name": "Costumage",
+    "icon": "https://i.ibb.co/wcQC153/costumage.png"
+  },
+  {
+    "name": "Cordomage",
+    "icon": "https://i.ibb.co/GxGh1gF/cordomage.png"
+  },
+  {
+    "name": "Joaillomage",
+    "icon": "https://i.ibb.co/pQ5k5gX/joallio.png"
+  },
+  {
+    "name": "Façommage",
+    "icon": "https://i.ibb.co/5kSWyk3/forgeur-boubou.png"
+  },
+  {
+    "name": "Forgemage",
+    "icon": "https://i.ibb.co/5Lgc6xy/forgemage.png"
+  },
+  {
+    "name": "Sculptomage",
+    "icon": "https://i.ibb.co/FKKngxR/sculptomage.png"
+  }
+]
