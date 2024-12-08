@@ -5,8 +5,9 @@
   "main": "deploy-commands.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
+    "linter": "eslint --version && eslint --color .",
     "deploy": "node ./deploy-commands.js && node ./index.js",
-    "deploysimple" : "node ./deploy-commands.js",
+    "deploysimple": "node ./deploy-commands.js",
     "start": "node ./index.js"
   },
   "keywords": [],
@@ -16,5 +17,10 @@
   "dependencies": {
     "discord.js": "^14.16.3",
     "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "@eslint/js": "~9.15.0",
+    "eslint": "~9.15.0",
+    "globals": "~15.12.0"
   }
 }

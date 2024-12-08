@@ -78,6 +78,79 @@ export const commands = [
     ],
   },
   {
+    name: "commander",
+    description: "Passer une commande à un joueur de la guilde",
+    type: 1, // Sous-commande
+    options: [
+      {
+        name: "pseudo",
+        type: 6, // user
+        description: "Joueur",
+        required: true,
+      },
+      {
+        name: "ressource",
+        type: 3,
+        description: "Ressource à commander (utiliser le nom exact du jeu)",
+        required: true
+      },
+      {
+        name: "quantite",
+        type: 4,
+        description: "Quantité de ressource à commander",
+        required: true,
+        min_value: 1,
+        max_value: 10000,
+      },
+    ],
+  },
+  {
+    name: "commandes",
+    description: "Gérer vos commandes",
+    options: [
+      {
+        name: "lister",
+        description: "Lister vos commandes en attente",
+        type: 1, // Sous-commande
+      },
+      {
+        name: "supprimer",
+        description: "Supprimer une commande en attente",
+        type: 1, // Sous-commande
+        options: [
+          {
+            name: "numero",
+            type: 4,
+            description: "Numéro de la commande à supprimer",
+            required: true,
+            min_value: 1,
+            max_value: 1e9,
+          },
+        ],
+      },
+      {
+        name: "todo",
+        description: "Lister les commandes que d'autres joueurs vous ont demandées",
+        type: 1, // Sous-commande
+      },
+      {
+        name: "valider",
+        description: "Valider une commande (= vous avez déposé la quantité demandée dans le coffre de guilde)",
+        type: 1, // Sous-commande
+        options: [
+          {
+            name: "numero",
+            type: 4,
+            description: "Numéro de la commande terminée",
+            required: true,
+            min_value: 1,
+            max_value: 1e9,
+          },
+        ]
+      },
+    ],
+  },
+  {
     name: "classe",
     description: "Gérer votre classe",
     options: [
