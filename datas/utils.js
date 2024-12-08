@@ -70,7 +70,7 @@ export function deleteClass(userId, username) {
 // Exemple : Recherche de joueurs ayant un métier spécifique
 export function searchByJob(jobName, niveauMin = 1) {
   return Object.entries(datas)
-    .filter(([_, info]) => info.metiers && info.metiers[jobName]) // Filtrer par métier
+    .filter(([, info]) => info.metiers && info.metiers[jobName]) // Filtrer par métier
     .map(([userId, info]) => ({
       userId,
       level: info.metiers[jobName],
@@ -81,7 +81,7 @@ export function searchByJob(jobName, niveauMin = 1) {
 // Exemple : Recherche de joueurs ayant une classe spécifique
 export function searchByClass(className, niveauMin = 1, element = null) {
   return Object.entries(datas)
-    .filter(([_, info]) => {
+    .filter(([, info]) => {
       // Vérifie si la classe existe et correspond au nom, sinon renvoie false
       const matchesClass = info.classe && info.classe.nom === className;
 
