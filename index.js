@@ -35,6 +35,8 @@ client.on("interactionCreate", async (interaction) => {
     ? interaction.member.displayName
     : interaction.user.username;
 
+  console.debug(`[${Date.now()}] Receive command "${commandName}" from ${pseudo} (#${userId})`);
+
   // Fonction pour créer un embed
   const createEmbed = (
     title,
