@@ -1,49 +1,35 @@
-import { Client, GatewayIntentBits, REST, Routes } from "discord.js";
+import { Client, GatewayIntentBits, EmbedBuilder } from "discord.js";
 import {
   datas,
-  loadDatas,
   addJob,
   deleteJob,
   setClass,
   deleteClass,
   searchByJob,
   searchByClass,
+  addOrder,
+  deleteOrder,
+  validateOrder,
+  listWaitingOrders,
+  listToDoOrders,
+  formatResourceString,
 } from "./datas/utils.js";
 import { utils } from "./commands.js";
 import "dotenv/config";
 import emojis from "./utils/emojis.js";
 
+console.log("Lancement de l'application...");
+
 // Remplacez par votre token et votre ID d'application
 const TOKEN = process.env.TOKEN;
-const CLIENT_ID = process.env.CLIENT_ID;
 
 // Initialisation du bot
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
-// Commandes à enregistrer
-
 // Événement prêt
 client.once("ready", () => {
-  console.log(`✅ Bot Logged in as en tant que ${client.user.tag}`);
+  console.log(`✅ Bot connecté en tant que ${client.user.tag}`);
 });
-
-// Connexion du bot
-client.login(TOKEN);
-
-// Enregistrement des commandes slash
-const rest = new REST({ version: "10" }).setToken(TOKEN);
-
-// (async () => {
-//   try {
-//     console.log("🔄 Enregistrement des commandes...");
-//     await rest.put(Routes.applicationCommands(CLIENT_ID), { body: commands });
-//     console.log("✅ Commandes enregistrées avec succès.");
-//   } catch (error) {
-//     console.error("❌ Erreur lors de l'enregistrement des commandes :", error);
-//   }
-// })();
-
-import { EmbedBuilder } from "discord.js";
 
 // Gestion des interactions
 client.on("interactionCreate", async (interaction) => {
@@ -54,6 +40,8 @@ client.on("interactionCreate", async (interaction) => {
   const pseudo = interaction.member
     ? interaction.member.displayName
     : interaction.user.username;
+
+  console.debug(`[${Date.now()}] Receive command "${commandName}" from ${pseudo} (#${userId})`);
 
   // Fonction pour créer un embed
   const createEmbed = (
@@ -96,7 +84,7 @@ client.on("interactionCreate", async (interaction) => {
       const embed = createEmbed(
         `Métier ${nom} ajouté`,
         `✅ Métier ${nom} de niveau ${niveau} a été ajouté.`,
-        utils.jobs.find((j) => j.name == nom).icon
+        utils.jobs.find((j) => j.name === nom).icon
       );
 
       await interaction.reply({ embeds: [embed], ephemeral: true });
@@ -107,7 +95,7 @@ client.on("interactionCreate", async (interaction) => {
         const metiers = Object.entries(userData.metiers)
           .sort(([, niveauA], [, niveauB]) => niveauB - niveauA) // Trie par niveau décroissant
           .map(([metier, niveau]) => {
-            if (icon.length == 0) icon = metier;
+            if (icon.length === 0) icon = metier;
             return {
               name: metier,
               value: `<:${metier
@@ -128,8 +116,8 @@ client.on("interactionCreate", async (interaction) => {
         // Création de l'embed de réponse
         const embed = createEmbed(
           "Vos métiers",
-          ``,
-          utils.jobs.find((j) => j.name == icon).icon,
+          "",
+          utils.jobs.find((j) => j.name === icon).icon,
           metiers
         );
 
@@ -138,7 +126,7 @@ client.on("interactionCreate", async (interaction) => {
         // Création d'un embed pour indiquer l'absence de métiers
         const embed = createEmbed(
           "Aucun métier trouvé",
-          `❌ Vous n'avez pas encore inscrit de métiers.`
+          "❌ Vous n'avez pas encore inscrit de métiers."
         );
 
         await interaction.reply({ embeds: [embed], ephemeral: true });
@@ -157,6 +145,68 @@ client.on("interactionCreate", async (interaction) => {
     }
   }
 
+  if (commandName === "commander") {
+    const toUserId = options.getUser("pseudo").id;
+    const resource = options.getString("ressource");
+    const quantity = options.getInteger("quantite");
+
+    addOrder(userId, toUserId, resource, quantity)
+
+    // Création de l'embed de réponse
+    const embed = createEmbed(
+      "Commande passée avec succès !",
+      `✅ Commande de **${quantity}** × **[${formatResourceString(resource)}]** passée à <@${toUserId}>`
+    );
+
+    await interaction.reply({ embeds: [embed], ephemeral: true });
+  }
+
+  if (commandName === "commandes") {
+    const subCommand = options.getSubcommand();
+
+    if (subCommand === "lister") {
+      const orders = listWaitingOrders(userId);
+      const formatedOrders = orders.length ? orders.map(({id, toUserId, resource, quantity}) => {
+        return `• ${quantity} × **[${formatResourceString(resource)}]** demandé${quantity > 1 ? "s" : ""} à <@${toUserId}> (commande **#${id}**)`;
+      }).join("\n") : "Aucune commande en attente";
+      const embed = createEmbed(
+        "Liste de vos commandes en attente ⌛",
+        formatedOrders
+      );
+      await interaction.reply({ embeds: [embed], ephemeral: true });
+    }
+
+    if (subCommand === "todo") {
+      const orders = listToDoOrders(userId);
+      const formatedOrders = orders.length ? orders.map(({id, fromUserId, resource, quantity}) => {
+        return `• ${quantity} × **[${formatResourceString(resource)}]** demandé${quantity > 1 ? "s" : ""} par <@${fromUserId}> (commande **#${id}**)`;
+      }).join("\n") : "Aucune commande à réaliser ✅";
+      const embed = createEmbed(
+        "Liste de vos commandes à réaliser 📝",
+        formatedOrders
+      );
+      await interaction.reply({ embeds: [embed], ephemeral: true });
+    }
+
+    if (subCommand === "supprimer") {
+      const orderId = options.getInteger("numero");
+      const success = deleteOrder(orderId, userId);
+      const title = success ? "Commande supprimée avec succès !" : "Impossible de supprimer cette commande"
+      const text = success ? `✅ La commande **#${orderId}** a été supprimée` : "❌ Cette commande n'existe pas ou vous ne pouvez pas la supprimer"
+      const embed = createEmbed(title, text);
+      await interaction.reply({ embeds: [embed], ephemeral: true });
+    }
+
+    if (subCommand === "valider") {
+      const orderId = options.getInteger("numero");
+      const success = validateOrder(orderId, userId);
+      const title = success ? "Commande validée avec succès !" : "Impossible de valider cette commande"
+      const text = success ? `✅ La commande **#${orderId}** a été validée` : "❌ Cette commande n'existe pas ou vous ne pouvez pas la valider"
+      const embed = createEmbed(title, text);
+      await interaction.reply({ embeds: [embed], ephemeral: true });
+    }
+  }
+
   if (commandName === "classe") {
     const subCommand = options.getSubcommand();
 
@@ -166,7 +216,7 @@ client.on("interactionCreate", async (interaction) => {
       const element = options.getString("element");
       setClass(userId, nom, niveau, element, pseudo); // Appel à la fonction pour définir une classe
 
-      let fields = [];
+      const fields = [];
 
       if (element) {
         fields.push({
@@ -187,8 +237,8 @@ client.on("interactionCreate", async (interaction) => {
       // Création de l'embed de réponse
       const embed = createEmbed(
         "Votre classe a été ajoutée !",
-        ``,
-        utils.classes.find((c) => c.name == nom).icon,
+        "",
+        utils.classes.find((c) => c.name === nom).icon,
         fields
       );
 
@@ -198,7 +248,7 @@ client.on("interactionCreate", async (interaction) => {
       if (userData && userData.classe) {
         const { nom, niveau, element } = userData.classe;
 
-        let fields = [];
+        const fields = [];
 
         if (element) {
           fields.push({
@@ -219,8 +269,8 @@ client.on("interactionCreate", async (interaction) => {
         // Création de l'embed de réponse
         const embed = createEmbed(
           "Votre classe actuelle",
-          ``,
-          utils.classes.find((c) => c.name == nom).icon,
+          "",
+          utils.classes.find((c) => c.name === nom).icon,
           fields
         );
 
@@ -240,7 +290,7 @@ client.on("interactionCreate", async (interaction) => {
       if (userData && userData.classe) {
         const { nom, niveau, element } = userData.classe;
 
-        let fields = [];
+        const fields = [];
 
         if (element) {
           fields.push({
@@ -261,8 +311,8 @@ client.on("interactionCreate", async (interaction) => {
         // Création de l'embed de réponse
         const embed = createEmbed(
           "Cette classe a bien été supprimée",
-          ``,
-          utils.classes.find((c) => c.name == nom).icon,
+          "",
+          utils.classes.find((c) => c.name === nom).icon,
           fields
         );
         try {
@@ -298,7 +348,7 @@ client.on("interactionCreate", async (interaction) => {
       }
 
       // Construction des champs de l'embed
-      let fields = [];
+      const fields = [];
 
       if (element) {
         fields.push({
@@ -355,7 +405,7 @@ client.on("interactionCreate", async (interaction) => {
         const embed = createEmbed(
           `${nom}`,
           `🔍 Joueurs ayant le métier :\n\n${response}`,
-          utils.jobs.find((c) => c.name == nom).icon
+          utils.jobs.find((c) => c.name === nom).icon
         );
 
         await interaction.reply({ embeds: [embed], ephemeral: true });
@@ -409,7 +459,7 @@ client.on("interactionCreate", async (interaction) => {
         const embed = createEmbed(
           `Résultats pour la classe ${nom}`,
           "🔍 Liste des joueurs de la classe :",
-          utils.classes.find((c) => c.name == nom).icon,
+          utils.classes.find((c) => c.name === nom).icon,
           fields
         );
 
