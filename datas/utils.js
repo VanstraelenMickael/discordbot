@@ -104,3 +104,55 @@ export function searchByClass(className, niveauMin = 1, element = null) {
       element: info.classe ? info.classe.element : "Aucun", // Définit un élément par défaut si la classe est absente
     }));
 }
+
+export function addOrder(fromUserId, toUserId, resource, quantity) {
+  if(!datas.orders)
+    datas.orders = [];
+  const id = datas.orders.length ? +datas.orders.at(-1).id + 1 : 1;
+  datas.orders.push({ id, fromUserId, toUserId, resource: resource.toLowerCase(), quantity });
+  saveData(datas);
+}
+
+export function deleteOrder(orderId, userId) {
+  if(!datas.orders) return false;
+  const orderIndex = datas.orders.findIndex((order) => order.id === orderId);
+  if(orderIndex < 0) return false;
+  if(datas.orders[orderIndex].fromUserId !== userId) return false; // seul le joueur ayant fait la commande peut la supprimer
+  datas.orders.splice(orderIndex, 1);
+  saveData(datas);
+  return true;
+}
+
+export function validateOrder(orderId, userId) {
+  if(!datas.orders) return false;
+  const orderIndex = datas.orders.findIndex((order) => order.id === orderId);
+  if(orderIndex < 0) return false;
+  if(datas.orders[orderIndex].toUserId !== userId) return false; // seul le joueur chargé de la commande peut la valider
+  datas.orders.splice(orderIndex, 1);
+  saveData(datas);
+  return true;
+}
+
+export function listWaitingOrders(userId) {
+  return (datas.orders ?? []).filter((order) => order.fromUserId === userId);
+}
+
+export function listToDoOrders(userId) {
+  return (datas.orders ?? []).filter((order) => order.toUserId === userId).sort((a,b) => {
+    return a.resource.localeCompare(b.resource) || b.quantity - a.quantity || a.id - b.id
+  });
+}
+
+export function formatResourceString(resource) {
+  if(!resource) return "";
+  const a = [];
+  for(const word of resource.toLowerCase().split(" ")) {
+    if(["de","du","des","la","le","les"].includes(word))
+      a.push(word);
+    else if(/^[dl]'/.test(word))
+      a.push(word.split("'")[0] + "'" + word.split("'")[1][0].toUpperCase() + word.split("'")[1].slice(1));
+    else
+      a.push(word[0].toUpperCase() + word.slice(1));
+  }
+  return a.join(" ");
+}

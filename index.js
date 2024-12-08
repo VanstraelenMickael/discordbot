@@ -7,6 +7,12 @@ import {
   deleteClass,
   searchByJob,
   searchByClass,
+  addOrder,
+  deleteOrder,
+  validateOrder,
+  listWaitingOrders,
+  listToDoOrders,
+  formatResourceString,
 } from "./datas/utils.js";
 import { utils } from "./commands.js";
 import "dotenv/config";
@@ -135,6 +141,68 @@ client.on("interactionCreate", async (interaction) => {
         `✅ Métier **${nom}** supprimé.`
       );
 
+      await interaction.reply({ embeds: [embed], ephemeral: true });
+    }
+  }
+
+  if (commandName === "commander") {
+    const toUserId = options.getUser("pseudo").id;
+    const resource = options.getString("ressource");
+    const quantity = options.getInteger("quantite");
+
+    addOrder(userId, toUserId, resource, quantity)
+
+    // Création de l'embed de réponse
+    const embed = createEmbed(
+      "Commande passée avec succès !",
+      `✅ Commande de **${quantity}** × **[${formatResourceString(resource)}]** passée à <@${toUserId}>`
+    );
+
+    await interaction.reply({ embeds: [embed], ephemeral: true });
+  }
+
+  if (commandName === "commandes") {
+    const subCommand = options.getSubcommand();
+
+    if (subCommand === "lister") {
+      const orders = listWaitingOrders(userId);
+      const formatedOrders = orders.length ? orders.map(({id, toUserId, resource, quantity}) => {
+        return `• ${quantity} × **[${formatResourceString(resource)}]** demandé${quantity > 1 ? "s" : ""} à <@${toUserId}> (commande **#${id}**)`;
+      }).join("\n") : "Aucune commande en attente";
+      const embed = createEmbed(
+        "Liste de vos commandes en attente ⌛",
+        formatedOrders
+      );
+      await interaction.reply({ embeds: [embed], ephemeral: true });
+    }
+
+    if (subCommand === "todo") {
+      const orders = listToDoOrders(userId);
+      const formatedOrders = orders.length ? orders.map(({id, fromUserId, resource, quantity}) => {
+        return `• ${quantity} × **[${formatResourceString(resource)}]** demandé${quantity > 1 ? "s" : ""} par <@${fromUserId}> (commande **#${id}**)`;
+      }).join("\n") : "Aucune commande à réaliser ✅";
+      const embed = createEmbed(
+        "Liste de vos commandes à réaliser 📝",
+        formatedOrders
+      );
+      await interaction.reply({ embeds: [embed], ephemeral: true });
+    }
+
+    if (subCommand === "supprimer") {
+      const orderId = options.getInteger("numero");
+      const success = deleteOrder(orderId, userId);
+      const title = success ? "Commande supprimée avec succès !" : "Impossible de supprimer cette commande"
+      const text = success ? `✅ La commande **#${orderId}** a été supprimée` : "❌ Cette commande n'existe pas ou vous ne pouvez pas la supprimer"
+      const embed = createEmbed(title, text);
+      await interaction.reply({ embeds: [embed], ephemeral: true });
+    }
+
+    if (subCommand === "valider") {
+      const orderId = options.getInteger("numero");
+      const success = validateOrder(orderId, userId);
+      const title = success ? "Commande validée avec succès !" : "Impossible de valider cette commande"
+      const text = success ? `✅ La commande **#${orderId}** a été validée` : "❌ Cette commande n'existe pas ou vous ne pouvez pas la valider"
+      const embed = createEmbed(title, text);
       await interaction.reply({ embeds: [embed], ephemeral: true });
     }
   }
