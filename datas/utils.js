@@ -109,8 +109,10 @@ export function addOrder(fromUserId, toUserId, resource, quantity) {
   if(!datas.orders)
     datas.orders = [];
   const id = datas.orders.length ? +datas.orders.at(-1).id + 1 : 1;
-  datas.orders.push({ id, fromUserId, toUserId, resource: resource.toLowerCase(), quantity });
+  const timestamp = Math.floor(Date.now() / 1000);
+  datas.orders.push({ id, timestamp, fromUserId, toUserId, resource: resource.toLowerCase(), quantity });
   saveData(datas);
+  return id;
 }
 
 export function deleteOrder(orderId, userId) {
@@ -124,13 +126,13 @@ export function deleteOrder(orderId, userId) {
 }
 
 export function validateOrder(orderId, userId) {
-  if(!datas.orders) return false;
+  if(!datas.orders) return [false];
   const orderIndex = datas.orders.findIndex((order) => order.id === orderId);
-  if(orderIndex < 0) return false;
-  if(datas.orders[orderIndex].toUserId !== userId) return false; // seul le joueur chargé de la commande peut la valider
-  datas.orders.splice(orderIndex, 1);
+  if(orderIndex < 0) return [false];
+  if(datas.orders[orderIndex].toUserId !== userId) return [false]; // seul le joueur chargé de la commande peut la valider
+  const order = datas.orders.splice(orderIndex, 1)[0];
   saveData(datas);
-  return true;
+  return [true, order];
 }
 
 export function listWaitingOrders(userId) {
@@ -141,6 +143,18 @@ export function listToDoOrders(userId) {
   return (datas.orders ?? []).filter((order) => order.toUserId === userId).sort((a,b) => {
     return a.resource.localeCompare(b.resource) || b.quantity - a.quantity || a.id - b.id
   });
+}
+
+export function listToDoOrdersByResource(userId) {
+  const orders = listToDoOrders(userId);
+  const byResource = {};
+  for(const order of orders) {
+    if(!byResource[order.resource])
+      byResource[order.resource] = { total: 0, orders: [] };
+    byResource[order.resource].total += order.quantity;
+    byResource[order.resource].orders.push(order);
+  }
+  return byResource;
 }
 
 export function formatResourceString(resource) {
@@ -155,4 +169,14 @@ export function formatResourceString(resource) {
       a.push(word[0].toUpperCase() + word.slice(1));
   }
   return a.join(" ");
+}
+
+export function formatOrderString(order) {
+  if(!order?.quantity || !order?.resource) return "";
+  return `commande **#${order.id}** passée ${order.timestamp ? `<t:${order.timestamp}:R>` : "il y a longtemps"}`;
+}
+
+export function formatInlineList(list) {
+  if(list?.length <= 1) return list?.[0];
+  return [list.slice(0, -1).join(", "), list.at(-1)].join(" et ");
 }
