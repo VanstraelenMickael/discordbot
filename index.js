@@ -22,8 +22,9 @@ import emojis from "./utils/emojis.js";
 
 console.log("Lancement de l'application...");
 
-// Remplacez par votre token et votre ID d'application
+// Remplacez par votre token d'application et l'ID du channel où envoyer les validations de commandes
 const TOKEN = process.env.TOKEN;
+const ORDER_CHANNEL_ID = process.env.ORDER_CHANNEL_ID;
 
 // Initialisation du bot
 const client = new Client({ intents: [GatewayIntentBits.Guilds] });
@@ -161,15 +162,16 @@ client.on("interactionCreate", async (interaction) => {
     const resource = options.getString("ressource");
     const quantity = options.getInteger("quantite");
 
-    addOrder(userId, toUserId, resource, quantity)
-
-    // Création de l'embed de réponse
+    const orderId = addOrder(userId, toUserId, resource, quantity)
     const embed = createEmbed(
       "Commande passée avec succès !",
       `✅ Commande de **${quantity}** × **[${formatResourceString(resource)}]** passée à <@${toUserId}>`
     );
-
     await interaction.reply({ embeds: [embed], ephemeral: true });
+
+    const channel = await client.channels.fetch(ORDER_CHANNEL_ID);
+    const publicMessage = createEmbed("Nouvelle commande", `<@${userId}> aimerait ${quantity} × **[${formatResourceString(resource)}]** (commande **#${orderId}**)`);
+    await channel.send({ content: `<@${toUserId}>`, embeds: [publicMessage] });
   }
 
   if (commandName === "commandes") {
@@ -239,11 +241,16 @@ client.on("interactionCreate", async (interaction) => {
 
     if (subCommand === "valider") {
       const orderId = options.getInteger("numero");
-      const success = validateOrder(orderId, userId);
+      const [success, order] = validateOrder(orderId, userId);
       const title = success ? "Commande validée avec succès !" : "Impossible de valider cette commande"
       const text = success ? `✅ La commande **#${orderId}** a été validée` : "❌ Cette commande n'existe pas ou vous ne pouvez pas la valider"
       const embed = createEmbed(title, text);
       await interaction.reply({ embeds: [embed], ephemeral: true });
+      if(success) {
+        const channel = await client.channels.fetch(ORDER_CHANNEL_ID);
+        const publicMessage = createEmbed("Commande prête ✅", `Ta commande **#${orderId}** de ${order.quantity} × **[${formatResourceString(order.resource)}]** a été validée par <@${userId}>`);
+        await channel.send({ content: `<@${order.fromUserId}>`, embeds: [publicMessage] });
+      }
     }
   }
 

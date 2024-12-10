@@ -112,6 +112,7 @@ export function addOrder(fromUserId, toUserId, resource, quantity) {
   const timestamp = Math.floor(Date.now() / 1000);
   datas.orders.push({ id, timestamp, fromUserId, toUserId, resource: resource.toLowerCase(), quantity });
   saveData(datas);
+  return id;
 }
 
 export function deleteOrder(orderId, userId) {
@@ -125,13 +126,13 @@ export function deleteOrder(orderId, userId) {
 }
 
 export function validateOrder(orderId, userId) {
-  if(!datas.orders) return false;
+  if(!datas.orders) return [false];
   const orderIndex = datas.orders.findIndex((order) => order.id === orderId);
-  if(orderIndex < 0) return false;
-  if(datas.orders[orderIndex].toUserId !== userId) return false; // seul le joueur chargé de la commande peut la valider
-  datas.orders.splice(orderIndex, 1);
+  if(orderIndex < 0) return [false];
+  if(datas.orders[orderIndex].toUserId !== userId) return [false]; // seul le joueur chargé de la commande peut la valider
+  const order = datas.orders.splice(orderIndex, 1)[0];
   saveData(datas);
-  return true;
+  return [true, order];
 }
 
 export function listWaitingOrders(userId) {
