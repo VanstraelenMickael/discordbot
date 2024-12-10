@@ -38,14 +38,14 @@ const rest = new REST({ version: "10" }).setToken(token);
 
     console.log("Nouvelles commandes déployées avec succès !");
     await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    console.log("Déploiement terminé. Lancement de l'application...");
-    // Importer dynamiquement et exécuter index.js
-    import("./index.js").catch((err) => {
-      console.error("Erreur lors du lancement de l'application :", err);
-    });
-
     console.log("Déploiement terminé.");
+
+    if(process.env.APP_ENV === "production") {
+      // Importer dynamiquement et exécuter index.js
+      import("./index.js").catch((err) => {
+        console.error("Erreur lors du lancement de l'application :", err);
+      });
+    }
   } catch (error) {
     console.error("Erreur lors du déploiement :", error);
   }
