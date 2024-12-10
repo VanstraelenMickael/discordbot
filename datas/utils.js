@@ -109,7 +109,8 @@ export function addOrder(fromUserId, toUserId, resource, quantity) {
   if(!datas.orders)
     datas.orders = [];
   const id = datas.orders.length ? +datas.orders.at(-1).id + 1 : 1;
-  datas.orders.push({ id, fromUserId, toUserId, resource: resource.toLowerCase(), quantity });
+  const timestamp = Math.floor(Date.now() / 1000);
+  datas.orders.push({ id, timestamp, fromUserId, toUserId, resource: resource.toLowerCase(), quantity });
   saveData(datas);
 }
 
@@ -143,6 +144,18 @@ export function listToDoOrders(userId) {
   });
 }
 
+export function listToDoOrdersByResource(userId) {
+  const orders = listToDoOrders(userId);
+  const byResource = {};
+  for(const order of orders) {
+    if(!byResource[order.resource])
+      byResource[order.resource] = { total: 0, orders: [] };
+    byResource[order.resource].total += order.quantity;
+    byResource[order.resource].orders.push(order);
+  }
+  return byResource;
+}
+
 export function formatResourceString(resource) {
   if(!resource) return "";
   const a = [];
@@ -155,4 +168,14 @@ export function formatResourceString(resource) {
       a.push(word[0].toUpperCase() + word.slice(1));
   }
   return a.join(" ");
+}
+
+export function formatOrderString(order) {
+  if(!order?.quantity || !order?.resource) return "";
+  return `commande **#${order.id}** passée ${order.timestamp ? `<t:${order.timestamp}:R>` : "il y a longtemps"}`;
+}
+
+export function formatInlineList(list) {
+  if(list?.length <= 1) return list?.[0];
+  return [list.slice(0, -1).join(", "), list.at(-1)].join(" et ");
 }

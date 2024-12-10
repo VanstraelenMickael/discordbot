@@ -11,8 +11,10 @@ import {
   deleteOrder,
   validateOrder,
   listWaitingOrders,
-  listToDoOrders,
+  listToDoOrdersByResource,
   formatResourceString,
+  formatOrderString,
+  formatInlineList
 } from "./datas/utils.js";
 import { utils } from "./commands.js";
 import "dotenv/config";
@@ -33,9 +35,20 @@ client.once("ready", () => {
 
 // Gestion des interactions
 client.on("interactionCreate", async (interaction) => {
-  if (!interaction.isCommand()) return;
+  let commandName, subCommand, options;
+  if(interaction.isCommand()) {
+    ({ commandName, options } = interaction);
+    try {
+      subCommand = options.getSubcommand();
+    } catch {
+      // no subCommand
+    }
+  }
+  else if(interaction.isButton())
+    [commandName, subCommand] = interaction.customId.split(" ");
+  else
+    return;
 
-  const { commandName, options } = interaction;
   const userId = interaction.user.id;
   const pseudo = interaction.member
     ? interaction.member.displayName
@@ -55,7 +68,7 @@ client.on("interactionCreate", async (interaction) => {
       .setColor(color) // Définir la couleur de l'embed
       .setTitle(title); // Titre de l'embed
 
-    if (description.length > 0) {
+    if (description?.length > 0) {
       embed.setDescription(description); // Description de l'embed
     }
 
@@ -73,8 +86,6 @@ client.on("interactionCreate", async (interaction) => {
   };
 
   if (commandName === "metier") {
-    const subCommand = options.getSubcommand();
-
     if (subCommand === "ajouter") {
       const nom = options.getString("nom");
       const niveau = options.getInteger("niveau");
@@ -162,8 +173,6 @@ client.on("interactionCreate", async (interaction) => {
   }
 
   if (commandName === "commandes") {
-    const subCommand = options.getSubcommand();
-
     if (subCommand === "lister") {
       const orders = listWaitingOrders(userId);
       const formatedOrders = orders.length ? orders.map(({id, toUserId, resource, quantity}) => {
@@ -177,15 +186,46 @@ client.on("interactionCreate", async (interaction) => {
     }
 
     if (subCommand === "todo") {
-      const orders = listToDoOrders(userId);
-      const formatedOrders = orders.length ? orders.map(({id, fromUserId, resource, quantity}) => {
-        return `• ${quantity} × **[${formatResourceString(resource)}]** demandé${quantity > 1 ? "s" : ""} par <@${fromUserId}> (commande **#${id}**)`;
-      }).join("\n") : "Aucune commande à réaliser ✅";
-      const embed = createEmbed(
-        "Liste de vos commandes à réaliser 📝",
-        formatedOrders
-      );
-      await interaction.reply({ embeds: [embed], ephemeral: true });
+      const ordersByResource = listToDoOrdersByResource(userId);
+      const lines = [];
+      for(const resource in ordersByResource) {
+        const { total, orders } = ordersByResource[resource];
+        const ids = orders.map((order) => `**#${order.id}**`);
+        lines.push(`• ${total} × **[${formatResourceString(resource)}]** (commande${ids.length > 1 ? "s" : ""} ${formatInlineList(ids)})`);
+      }
+      const content = lines.length ? lines.join("\n") : "Aucune commande à réaliser ✅";
+      await interaction.reply({ embeds: [createEmbed("Liste de vos commandes à réaliser 📝", content)], ephemeral: true, "components": [
+        {
+          "type": 1,
+          "components": [
+              {
+                  "type": 2,
+                  "label": "Détails",
+                  "style": 1,
+                  "emoji": {"id": null, "name": "🔎"},
+                  "custom_id": "commandes todo-details"
+              }
+          ]
+        }
+      ]});
+    }
+
+    if (subCommand === "todo-details") {
+      const ordersByResource = listToDoOrdersByResource(userId);
+      const embeds = [createEmbed("Liste de vos commandes à réaliser 📝")];
+      for(const resource in ordersByResource) {
+        const { total, orders } = ordersByResource[resource];
+        const title = `${total} × **[${formatResourceString(resource)}]**`;
+        const details = [];
+        for(const order of orders) {
+          const { fromUserId, quantity} = order;
+          details.push(`• ${quantity} demandé${quantity>1?"s":""} par <@${fromUserId}> (${formatOrderString(order)})`);
+        }
+        embeds.push(createEmbed(title, details.join("\n")));
+      }
+      if(embeds.length === 1)
+        embeds.push(createEmbed("Aucune commande à réaliser ✅"));
+      await interaction.reply({ embeds, ephemeral: true });
     }
 
     if (subCommand === "supprimer") {
@@ -208,8 +248,6 @@ client.on("interactionCreate", async (interaction) => {
   }
 
   if (commandName === "classe") {
-    const subCommand = options.getSubcommand();
-
     if (subCommand === "definir") {
       const nom = options.getString("nom");
       const niveau = options.getInteger("niveau");
@@ -387,8 +425,6 @@ client.on("interactionCreate", async (interaction) => {
   }
 
   if (commandName === "rechercher") {
-    const subCommand = options.getSubcommand();
-
     if (subCommand === "metier") {
       const nom = options.getString("nom");
       const niveauMin = options.getInteger("niveau_min") || 1;
