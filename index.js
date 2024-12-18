@@ -112,11 +112,13 @@ client.on("interactionCreate", async (interaction) => {
               name: metier,
               value: `<:${metier
                 .toLocaleLowerCase()
+                .replace(/ç/g, "c")
                 .replace(/û/g, "u")
                 .replace(/ê/g, "e")}:${
                 emojis[
                   metier
                     .toLocaleLowerCase()
+                    .replace(/ç/g, "c")
                     .replace(/û/g, "u")
                     .replace(/ê/g, "e")
                 ]
